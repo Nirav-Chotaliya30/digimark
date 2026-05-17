@@ -1,82 +1,130 @@
-# DigiMark - Smart Attendance System
+<h1 align="center">
+  <br>
+  DigiMark - Smart Attendance System
+  <br>
+</h1>
 
-Production-ready Flask web application for role-based attendance with dual verification (face + GPS geofence).
+<h4 align="center">A production-ready Flask web application for role-based attendance featuring dual verification (Facial Recognition + GPS Geofencing).</h4>
 
-## Tech Stack
-- Backend: Flask, Blueprints, SQLAlchemy, Flask-Login, Flask-Bcrypt, Flask-CORS
-- Database: SQLite
-- Frontend: HTML5, Bootstrap 5, Vanilla JS
-- AI/ML: OpenCV + face_recognition
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python Version">
+  <img src="https://img.shields.io/badge/Flask-3.0-lightgrey.svg" alt="Flask Version">
+  <img src="https://img.shields.io/badge/OpenCV-4.10-green.svg" alt="OpenCV">
+  <img src="https://img.shields.io/badge/Bootstrap-5.3-purple.svg" alt="Bootstrap">
+</p>
 
-## Project Structure
-Implemented exactly as requested in the workspace root:
-- `app.py`, `config.py`, `.env`, `requirements.txt`
-- `models/`, `routes/`, `templates/`, `static/`, `face_module/`, `utils/`
+<p align="center">
+  <a href="#key-features">Key Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#local-setup">Local Setup</a> •
+  <a href="#how-it-works">How To Use</a> •
+  <a href="#deployment">Deployment</a>
+</p>
 
-## Setup (Local)
-1. Create and activate virtual environment:
-   - Windows PowerShell:
-     - `python -m venv .venv`
-     - `.venv\\Scripts\\Activate.ps1`
-2. Install dependencies:
-   - `pip install -r requirements.txt`
-3. Verify `.env` values (defaults already included).
-4. Run the app:
-   - `python app.py`
-5. Open:
-   - [http://127.0.0.1:5000](http://127.0.0.1:5000)
+---
 
-## Default Admin Seed
-- Email: `admin@digimark.com`
-- Password: `Admin@123`
+## ✨ Key Features
 
-The admin account is auto-seeded on first run if missing.
+* **🔐 Role-Based Access Control:** Secure portals for Students, Faculty, and Administrators.
+* **👩‍🎓 Student Face Registration:** Seamless 5-frame auto-capture, average encoding generation, and basic liveness checks.
+* **📍 GPS Geofencing:** Ensures attendance can only be marked within the designated college perimeter using Haversine distance calculations.
+* **✅ Dual-Verification Attendance:** Requires both face match and valid GPS location to mark attendance, preventing proxy logging.
+* **📊 Analytics & Reports:** Faculty and Admins get rich dashboards, real-time analytics, filtering, defaulter tracking APIs, and CSV export functionality.
+* **🛡️ Security First:** Bcrypt password hashing, session management, and robust logging.
 
-## Native Dependency Notes (face_recognition)
-`face_recognition` depends on `dlib` and system build tools.
+## 🛠️ Tech Stack
 
-### Windows (common prerequisites)
-- Install Visual Studio Build Tools (C++ workload).
-- Install CMake.
-- Ensure Python version is compatible with your installed wheels.
+* **Backend:** Python, Flask, Flask-Blueprints, SQLAlchemy (ORM)
+* **Authentication:** Flask-Login, Flask-Bcrypt, Flask-CORS
+* **Database:** SQLite (Default, configurable to MySQL/PostgreSQL)
+* **Frontend:** HTML5, CSS3, Bootstrap 5, Vanilla JavaScript
+* **AI & Machine Learning:** OpenCV, `face_recognition` (dlib)
+* **Production Servers:** Gunicorn (Linux), Waitress (Windows)
 
-If face-recognition build fails, install prebuilt wheels for `dlib` matching your Python version, then reinstall `face_recognition`.
+## 🚀 Local Setup
 
-## Core Features Implemented
-- Role-based auth (student/faculty/admin), bcrypt password hashing, session management
-- Student profile + face registration (5-frame auto capture + average encoding + basic liveness check)
-- GPS geofence verification via Haversine distance
-- Dual-verification attendance marking with duplicate prevention
-- Faculty reports, filtering, defaulter API, CSV export
-- Admin dashboard with analytics and management APIs
-- Logging to `logs/digimark.log`
+### Prerequisites
+- Python 3.8 or higher installed on your machine.
+- For Windows users, `face_recognition` requires [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (C++ workload) and CMake.
 
-## API Endpoints
-- `POST /api/register-face`
-- `POST /api/mark-attendance`
-- `GET /api/attendance/<student_id>`
-- `GET /api/defaulters/<subject_id>`
-- `POST /api/admin/add-subject`
-- `POST /api/admin/add-faculty`
-- `GET /api/export/csv/<subject_id>`
+### Installation
 
-## Deployment
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Nirav-Chotaliya30/digimark.git
+   cd digimark
+   ```
 
-### Render
-1. Push project to GitHub.
-2. Create a new **Web Service** in Render from the repo.
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `python app.py`
-5. Add environment variables from `.env.example`.
-6. Persist SQLite only for testing; use managed DB for long-term production.
+2. **Create and activate a virtual environment**
+   * Windows:
+     ```bash
+     python -m venv .venv
+     .venv\Scripts\Activate.ps1
+     ```
+   * Linux/Mac:
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     ```
 
-### Railway
-1. Create new project from GitHub repo.
-2. Set start command to `python app.py`.
-3. Add all `.env` variables in Railway Variables.
-4. Deploy and verify routes.
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Production Notes
-- Replace `SECRET_KEY` with a strong secret.
-- Move from SQLite to managed DB for scale.
-- Set `debug=False` in production startup.
+4. **Environment Variables**
+   * Copy the `.env.example` file and rename it to `.env`.
+   * Fill in your specific secrets, college latitude/longitude, and database connection strings.
+
+5. **Run the Application (Development)**
+   ```bash
+   python app.py
+   ```
+   *Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.*
+
+---
+
+## 🔑 Default Admin Account
+
+On the very first run, the system automatically creates a default admin account so you can set up the institution:
+- **Email:** `admin@digimark.com`
+- **Password:** `Admin@123`
+
+*(Note: Please change this immediately after your first login in a production environment).*
+
+---
+
+## 🌐 API Endpoints
+
+The system exposes clean RESTful APIs for frontend interactions:
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/register-face` | `POST` | Processes and encodes a student's face via webcam. |
+| `/api/mark-attendance` | `POST` | Validates Face + GPS to log an attendance record. |
+| `/api/attendance/<student_id>` | `GET` | Fetches a specific student's attendance history. |
+| `/api/defaulters/<subject_id>` | `GET` | Returns a list of students below the attendance threshold. |
+| `/api/export/csv/<subject_id>`| `GET` | Generates a downloadable CSV report for a subject. |
+
+---
+
+## ☁️ Deployment
+
+### Render / Railway (Linux Environments)
+1. Connect your GitHub repository to your hosting provider.
+2. **Build Command:** `pip install -r requirements.txt`
+3. **Start Command:** `gunicorn app:app` *(Do NOT use `python app.py` for production)*
+4. Copy variables from `.env.example` into the Environment Variables dashboard of your host.
+
+### Windows Server (IIS / Waitress)
+If hosting on a Windows Server, use `waitress` to serve the application:
+```bash
+waitress-serve --listen=0.0.0.0:8080 app:app
+```
+
+### Production Checklist
+- [x] Change `app.run(debug=True)` to `debug=False` in `app.py`. *(Already Done!)*
+- [ ] Replace `SECRET_KEY` in `.env` with a strong, randomly generated string.
+- [ ] Migrate from SQLite to a robust database like **MySQL** or **PostgreSQL** by updating the `SQLALCHEMY_DATABASE_URI`.
+
+---
+*Developed by [Nirav Chotaliya](https://github.com/Nirav-Chotaliya30)*
