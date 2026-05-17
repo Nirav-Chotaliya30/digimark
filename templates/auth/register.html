@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Register | DigiMark{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8 col-lg-9">
+    <div class="card-soft p-4 p-md-5">
+      <p class="muted-caption mb-1">New User Onboarding</p>
+      <h3 class="page-header mb-3">Create DigiMark Account</h3>
+      <form method="post" id="registerForm">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" id="usernameField" name="username" required>
+            <div class="form-text">For students, username is auto-set to enrollment number.</div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" required>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" name="password" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" name="role" id="roleSelect" required>
+              <option value="">Choose role</option>
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-control" name="full_name" required>
+        </div>
+        <div id="studentFields" class="d-none">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Enrollment No</label>
+              <input type="text" class="form-control" id="enrollmentField" name="enrollment_no">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Branch</label>
+              <select class="form-select" name="branch" id="branchField">
+                <option value="">Choose branch</option>
+                {% for branch in branches %}
+                <option value="{{ branch }}">{{ branch }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Passout Year</label>
+              <select class="form-select" name="passout_year" id="passoutYearField">
+                <option value="">Select year</option>
+                {% for y in passout_years %}
+                <option value="{{ y }}">{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Semester</label>
+              <select class="form-select" name="semester" id="semesterField">
+                <option value="">Select semester</option>
+                {% for sem in semesters %}
+                <option value="{{ sem }}">Semester {{ sem }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="form-text mb-3">Available branches: {{ branch_count }}</div>
+        </div>
+        <div id="facultyFields" class="d-none">
+          <div class="mb-3">
+            <label class="form-label">Department</label>
+            <select class="form-select" name="department" id="departmentField">
+              <option value="">Choose department</option>
+              {% for branch in branches %}
+              <option value="{{ branch }}">{{ branch }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-brand w-100" type="submit">Register</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const roleSelect = document.getElementById("roleSelect");
+const registerForm = document.getElementById("registerForm");
+const studentFields = document.getElementById("studentFields");
+const facultyFields = document.getElementById("facultyFields");
+const usernameField = document.getElementById("usernameField");
+const enrollmentField = document.getElementById("enrollmentField");
+const branchField = document.getElementById("branchField");
+const passoutYearField = document.getElementById("passoutYearField");
+const semesterField = document.getElementById("semesterField");
+const departmentField = document.getElementById("departmentField");
+
+function syncStudentUsername() {
+  if (roleSelect.value === "student") {
+    usernameField.value = enrollmentField.value.trim();
+  }
+}
+
+roleSelect.addEventListener("change", () => {
+  studentFields.classList.toggle("d-none", roleSelect.value !== "student");
+  facultyFields.classList.toggle("d-none", roleSelect.value !== "faculty");
+  const isStudent = roleSelect.value === "student";
+  usernameField.readOnly = isStudent;
+  if (isStudent) {
+    usernameField.classList.add("bg-light");
+    enrollmentField.required = true;
+    branchField.required = true;
+    passoutYearField.required = true;
+    semesterField.required = true;
+    departmentField.required = false;
+    departmentField.value = "";
+    syncStudentUsername();
+  } else {
+    usernameField.classList.remove("bg-light");
+    enrollmentField.required = false;
+    branchField.required = false;
+    passoutYearField.required = false;
+    semesterField.required = false;
+    departmentField.required = true;
+  }
+});
+
+enrollmentField.addEventListener("input", syncStudentUsername);
+registerForm.addEventListener("submit", (event) => {
+  if (roleSelect.value === "faculty" && !departmentField.value.trim()) {
+    event.preventDefault();
+    alert("Please select a department.");
+  }
+});
+</script>
+{% endblock %}

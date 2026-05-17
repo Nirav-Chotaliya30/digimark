@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Register Face | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Biometric Onboarding</p>
+  <h3 class="page-header mb-0">Face Registration</h3>
+</div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card-soft p-3">
+      <video id="faceVideo" autoplay muted></video>
+      <canvas id="faceCanvas" class="d-none"></canvas>
+      <div class="progress mt-3">
+        <div id="captureProgress" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+      </div>
+      <div id="statusMessage" class="mt-3 alert alert-secondary">Ready to capture 5 frames.</div>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-brand px-4" id="startCaptureBtn">Start Auto Capture</button>
+        <a class="btn btn-outline-secondary px-4" href="{{ url_for('student.student_dashboard') }}">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-soft p-3 h-100">
+      <h5>How Face Registration Works</h5>
+      <ol class="small mb-3">
+        <li>Webcam captures 5 frames (1-second gap).</li>
+        <li>Frames are sent to `POST /api/register-face` as base64 images.</li>
+        <li>Backend extracts a 128-d face encoding for each frame.</li>
+        <li>System performs liveness check using face movement.</li>
+        <li>Average encoding is stored for your student record.</li>
+      </ol>
+      <h6 class="mb-2">Where It Is Stored</h6>
+      <p class="small mb-1"><strong>Database:</strong> SQLite (`digimark.db`)</p>
+      <p class="small mb-1"><strong>Table:</strong> `students`</p>
+      <p class="small mb-0"><strong>Columns:</strong> `face_encoding` (JSON vector), `face_registered` (boolean)</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+<script>
+const statusMessage = document.getElementById("statusMessage");
+const progressBar = document.getElementById("captureProgress");
+const startCaptureBtn = document.getElementById("startCaptureBtn");
+const cam = new DigiMarkCamera("faceVideo", "faceCanvas");
+
+async function initCamera() {
+  try {
+    await cam.start();
+  } catch (err) {
+    statusMessage.className = "mt-3 alert alert-danger";
+    statusMessage.innerText = err.message;
+    startCaptureBtn.disabled = true;
+  }
+}
+
+startCaptureBtn.addEventListener("click", async () => {
+  startCaptureBtn.disabled = true;
+  try {
+    const frames = await cam.autoCaptureFrames(5, 1000, (step, total) => {
+      const percent = Math.round((step / total) * 100);
+      progressBar.style.width = `${percent}%`;
+      progressBar.innerText = `${percent}%`;
+      statusMessage.className = "mt-3 alert alert-info";
+      statusMessage.innerText = `Captured frame ${step} of ${total}`;
+    });
+
+    const response = await fetch("/api/register-face", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ images: frames })
+    });
+    const result = await response.json();
+    if (result.success) {
+      statusMessage.className = "mt-3 alert alert-success";
+      statusMessage.innerText = result.message;
+      cam.stop();
+      startCaptureBtn.classList.add("d-none");
+      statusMessage.insertAdjacentHTML(
+        "afterend",
+        `<div class="alert alert-info mt-2 mb-0">
+          Face registration complete. You can now return to <a href="{{ url_for('student.student_dashboard') }}">Dashboard</a> and mark attendance.
+        </div>`
+      );
+    } else {
+      statusMessage.className = "mt-3 alert alert-danger";
+      statusMessage.innerText = result.message || "Face registration failed.";
+      startCaptureBtn.disabled = false;
+    }
+  } catch (err) {
+    statusMessage.className = "mt-3 alert alert-danger";
+    statusMessage.innerText = err.message;
+    startCaptureBtn.disabled = false;
+  }
+});
+
+initCamera();
+
+window.addEventListener("beforeunload", () => {
+  cam.stop();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Faculty Students | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Faculty / Students</p>
+  <h3 class="page-header mb-0">Students</h3>
+</div>
+<div class="card-soft p-3 mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Subject</label>
+      <select id="subjectFilter" class="form-select" onchange="if(this.value){window.location='{{ url_for('faculty.faculty_students_page') }}?subject_id='+this.value}">
+        {% for s in subjects %}
+        <option value="{{ s.id }}" {% if selected_subject and selected_subject.id == s.id %}selected{% endif %}>{{ s.code }} - {{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-6"><input id="studentSearch" class="form-control" placeholder="Search by enrollment or name"></div>
+  </div>
+</div>
+<div class="card-soft p-3">
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Enrollment</th><th>Name</th><th>Branch</th><th>Year</th><th>Semester</th><th>Face</th></tr></thead>
+      <tbody id="studentsBody">
+        {% for s in students %}
+        <tr data-search="{{ s.enrollment_no }} {{ s.full_name }}">
+          <td>{{ s.enrollment_no }}</td>
+          <td>{{ s.full_name }}</td>
+          <td>{{ s.branch }}</td>
+          <td>{{ s.year }}</td>
+          <td>{{ s.semester if s.semester else "-" }}</td>
+          <td><span class="status-pill {{ 'status-ok' if s.face_registered else 'status-bad' }}">{{ "Registered" if s.face_registered else "Pending" }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No students found for selected subject.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "studentSearch",
+  tableBodySelector: "#studentsBody",
+});
+</script>
+{% endblock %}

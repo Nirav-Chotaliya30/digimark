@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Student History | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Student / History</p>
+  <h3 class="page-header mb-0">Attendance History</h3>
+</div>
+<div class="card-soft p-3">
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Date</th><th>Time</th><th>Subject</th><th>Status</th><th>Face</th><th>GPS</th></tr></thead>
+      <tbody>
+        {% for row in records %}
+        <tr>
+          <td>{{ row.date|local_date }}</td>
+          <td>{{ row.time|local_time }}</td>
+          <td>{{ row.subject.code }} - {{ row.subject.name }}</td>
+          <td><span class="status-pill {{ 'status-ok' if row.status == 'present' else 'status-bad' }}">{{ row.status }}</span></td>
+          <td>{{ "Yes" if row.face_verified else "No" }}</td>
+          <td>{{ "Yes" if row.gps_verified else "No" }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No attendance records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

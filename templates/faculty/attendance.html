@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Faculty Attendance | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <p class="muted-caption mb-1">Faculty / Attendance</p>
+      <h3 class="page-header mb-0">Attendance Records</h3>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span id="liveLectureBadge" class="status-pill status-neutral">No Lecture</span>
+      <button id="startLectureBtn" class="btn btn-sm btn-outline-success">Start Lecture</button>
+      <button id="endLectureBtn" class="btn btn-sm btn-outline-danger" disabled>End Lecture</button>
+    </div>
+  </div>
+</div>
+<div class="card-soft p-3 mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Subject</label>
+      <select id="subjectFilter" class="form-select" onchange="window.location='{{ url_for('faculty.faculty_attendance_page') }}'+(this.value ? '?subject_id='+this.value : '')">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+        <option value="{{ s.id }}" {% if selected_subject_id == s.id %}selected{% endif %}>{{ s.code }} - {{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4"><label class="form-label">Search</label><input id="attendanceSearch" class="form-control" placeholder="Enrollment, name, subject"></div>
+  </div>
+</div>
+<div class="card-soft p-3">
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Date</th><th>Time</th><th>Enrollment</th><th>Name</th><th>Subject</th><th>Status</th><th>Face</th><th>GPS</th></tr></thead>
+      <tbody id="attendanceBody">
+        {% for r in records %}
+        <tr data-search="{{ r.student.enrollment_no }} {{ r.student.full_name }} {{ r.subject.code }}">
+          <td>{{ r.date }}</td>
+          <td>{{ r.time|local_time }}</td>
+          <td>{{ r.student.enrollment_no }}</td>
+          <td>{{ r.student.full_name }}</td>
+          <td>{{ r.subject.code }}</td>
+          <td>{{ r.status }}</td>
+          <td>{{ "Yes" if r.face_verified else "No" }}</td>
+          <td>{{ "Yes" if r.gps_verified else "No" }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">No attendance records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "attendanceSearch",
+  tableBodySelector: "#attendanceBody",
+});
+const liveLectureBadgeEl = document.getElementById("liveLectureBadge");
+const startLectureBtnEl = document.getElementById("startLectureBtn");
+const endLectureBtnEl = document.getElementById("endLectureBtn");
+
+async function refreshLectureStatus() {
+  const payload = await DigiMarkAdmin.apiRequest("/api/faculty/current-lecture");
+  const lecture = payload?.data?.lecture || null;
+  const isActive = Boolean(payload.success && lecture);
+  liveLectureBadgeEl.className = `status-pill ${isActive ? "status-ok" : "status-neutral"}`;
+  liveLectureBadgeEl.textContent = isActive ? `Live: ${lecture.subject_code} ${lecture.start_time}-${lecture.end_time}` : "No Lecture";
+  startLectureBtnEl.disabled = isActive;
+  endLectureBtnEl.disabled = !isActive;
+}
+
+startLectureBtnEl.addEventListener("click", async () => {
+  const data = await DigiMarkAdmin.apiRequest("/api/faculty/start-lecture", { method: "POST", headers: {"Content-Type": "application/json"}, body: "{}" });
+  window.showToast(data.message || (data.success ? "Lecture started." : "Could not start lecture."), data.success ? "success" : "danger");
+  refreshLectureStatus();
+});
+
+endLectureBtnEl.addEventListener("click", async () => {
+  const data = await DigiMarkAdmin.apiRequest("/api/faculty/end-lecture", { method: "POST", headers: {"Content-Type": "application/json"}, body: "{}" });
+  window.showToast(data.message || (data.success ? "Lecture ended." : "Could not end lecture."), data.success ? "success" : "danger");
+  refreshLectureStatus();
+});
+
+refreshLectureStatus();
+setInterval(refreshLectureStatus, 45000);
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Attendance | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3"><p class="muted-caption mb-1">Admin / Attendance</p><h3 class="page-header mb-0">Attendance Logs</h3></div>
+<div class="card-soft p-3 mb-3">
+  <h5 class="mb-3">Timetable Manager</h5>
+  <form id="timetableForm" class="row g-2">
+    <input type="hidden" id="ttId">
+    <div class="col-md-2"><select class="form-select" id="ttDay" required><option value="">Day</option>{% for d in weekdays %}<option value="{{ d }}">{{ d }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><input class="form-control" id="ttStart" type="time" required></div>
+    <div class="col-md-2"><input class="form-control" id="ttEnd" type="time" required></div>
+    <div class="col-md-3"><select class="form-select" id="ttSubject" required><option value="">Subject</option>{% for s in subjects %}<option value="{{ s.id }}">{{ s.code }} - {{ s.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select class="form-select" id="ttFaculty" required><option value="">Faculty</option>{% for f in faculties %}<option value="{{ f.id }}">{{ f.full_name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select class="form-select" id="ttBranch" required><option value="">Department</option>{% for b in branches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><select class="form-select" id="ttYear" required><option value="">Year</option>{% for y in passout_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><select class="form-select" id="ttSemester"><option value="">Sem</option>{% for sem in range(1,9) %}<option value="{{ sem }}">S{{ sem }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><input class="form-control" id="ttClassroom" placeholder="Classroom"></div>
+    <div class="col-md-2"><input class="form-control" id="ttLat" type="number" step="any" placeholder="Latitude"></div>
+    <div class="col-md-2"><input class="form-control" id="ttLng" type="number" step="any" placeholder="Longitude"></div>
+    <div class="col-md-2"><input class="form-control" id="ttRadius" type="number" step="any" min="1" placeholder="Radius (m)"></div>
+    <div class="col-md-2"><button class="btn btn-brand w-100" id="ttSaveBtn">Save Slot</button></div>
+    <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="button" id="ttResetBtn">Reset</button></div>
+  </form>
+  <div class="table-responsive mt-3">
+    <table class="table table-sm">
+      <thead><tr><th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th><th>Batch</th><th>Classroom/GPS</th><th>Actions</th></tr></thead>
+      <tbody id="timetableBody">
+        {% for row in timetable_entries %}
+        <tr>
+          <td>{{ row.day_of_week }}</td>
+          <td>{{ row.start_time }} - {{ row.end_time }}</td>
+          <td>{{ row.subject.code }} - {{ row.subject.name }}</td>
+          <td>{{ row.faculty.full_name }}</td>
+          <td>{{ row.branch }} / {{ row.year }} / {{ row.semester if row.semester else "-" }}</td>
+          <td>{{ row.classroom if row.classroom else "-" }}{% if row.latitude is not none and row.longitude is not none %}<br><small class="text-muted">{{ row.latitude }}, {{ row.longitude }} ({{ row.geofence_radius_meters if row.geofence_radius_meters else "-" }}m)</small>{% endif %}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary tt-edit-btn"
+              data-id="{{ row.id }}" data-day="{{ row.day_of_week }}" data-start="{{ row.start_time }}" data-end="{{ row.end_time }}"
+              data-subject="{{ row.subject_id }}" data-faculty="{{ row.faculty_id }}" data-branch="{{ row.branch }}" data-year="{{ row.year }}"
+              data-semester="{{ row.semester if row.semester else '' }}" data-classroom="{{ row.classroom if row.classroom else '' }}"
+              data-lat="{{ row.latitude if row.latitude is not none else '' }}" data-lng="{{ row.longitude if row.longitude is not none else '' }}"
+              data-radius="{{ row.geofence_radius_meters if row.geofence_radius_meters is not none else '' }}">Edit</button>
+            <button class="btn btn-sm btn-outline-danger tt-delete-btn" data-id="{{ row.id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No timetable slots.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card-soft p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-4"><input class="form-control" id="searchAttendance" placeholder="Search by name, enrollment, subject"></div>
+    <div class="col-md-3"><select class="form-select" id="branchFilter"><option value="">All Departments</option>{% for b in branches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select class="form-select" id="subjectFilter"><option value="">All Subjects</option>{% for s in subjects %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><input type="date" class="form-control" id="dateFilter"></div>
+  </div>
+</div>
+<div class="card-soft p-3">
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Date</th><th>Time</th><th>Enrollment</th><th>Name</th><th>Branch</th><th>Subject</th><th>Status</th><th>Face</th><th>GPS</th></tr></thead>
+      <tbody id="attendanceBody">
+        {% for r in records %}
+        <tr data-search="{{ r.student.enrollment_no }} {{ r.student.full_name }} {{ r.subject.code }}" data-branch="{{ r.student.branch }}" data-subject="{{ r.subject.code }}" data-date="{{ r.date.isoformat() }}">
+          <td>{{ r.date|local_date }}</td><td>{{ r.time|local_time }}</td><td>{{ r.student.enrollment_no }}</td><td>{{ r.student.full_name }}</td><td>{{ r.student.branch }}</td><td>{{ r.subject.code }}</td><td>{{ r.status }}</td><td>{{ "Yes" if r.face_verified else "No" }}</td><td>{{ "Yes" if r.gps_verified else "No" }}</td>
+        </tr>
+        {% else %}<tr><td colspan="9">No attendance records.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+function resetTimetableForm() {
+  ttId.value = "";
+  timetableForm.reset();
+  ttSaveBtn.textContent = "Save Slot";
+}
+
+timetableForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    id: ttId.value || undefined,
+    day_of_week: ttDay.value,
+    start_time: ttStart.value,
+    end_time: ttEnd.value,
+    subject_id: ttSubject.value,
+    faculty_id: ttFaculty.value,
+    branch: ttBranch.value,
+    year: ttYear.value,
+    semester: ttSemester.value,
+    classroom: ttClassroom.value,
+    latitude: ttLat.value,
+    longitude: ttLng.value,
+    radius: ttRadius.value,
+    geofence_radius_meters: ttRadius.value,
+  };
+  const url = ttId.value ? "/api/admin/timetable/update" : "/api/admin/timetable/add";
+  const method = ttId.value ? "PUT" : "POST";
+  const data = await DigiMarkAdmin.apiRequest(url, { method, headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+  window.showToast(data.message || (data.success ? "Saved." : "Failed."), data.success ? "success" : "danger");
+  if (data.success) setTimeout(() => window.location.reload(), 500);
+});
+
+ttResetBtn.addEventListener("click", resetTimetableForm);
+
+document.querySelectorAll(".tt-edit-btn").forEach((btn) => btn.addEventListener("click", () => {
+  ttId.value = btn.dataset.id;
+  ttDay.value = btn.dataset.day;
+  ttStart.value = btn.dataset.start;
+  ttEnd.value = btn.dataset.end;
+  ttSubject.value = btn.dataset.subject;
+  ttFaculty.value = btn.dataset.faculty;
+  ttBranch.value = btn.dataset.branch;
+  ttYear.value = btn.dataset.year;
+  ttSemester.value = btn.dataset.semester;
+  ttClassroom.value = btn.dataset.classroom;
+  ttLat.value = btn.dataset.lat;
+  ttLng.value = btn.dataset.lng;
+  ttRadius.value = btn.dataset.radius;
+  ttSaveBtn.textContent = "Update Slot";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}));
+
+document.querySelectorAll(".tt-delete-btn").forEach((btn) => btn.addEventListener("click", async () => {
+  if (!confirm("Delete this timetable slot?")) return;
+  const data = await DigiMarkAdmin.apiRequest(`/api/admin/timetable/delete/${btn.dataset.id}`, { method: "DELETE" });
+  window.showToast(data.message || (data.success ? "Deleted." : "Failed."), data.success ? "success" : "danger");
+  if (data.success) setTimeout(() => window.location.reload(), 400);
+}));
+
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "searchAttendance",
+  tableBodySelector: "#attendanceBody",
+  branchFilterId: "branchFilter",
+  subjectFilterId: "subjectFilter",
+  dateFilterId: "dateFilter",
+});
+</script>
+{% endblock %}

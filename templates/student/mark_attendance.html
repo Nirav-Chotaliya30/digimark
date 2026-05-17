@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Dual Verification</p>
+  <h3 class="page-header mb-0">Mark Attendance</h3>
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card-soft p-3">
+      <div class="mb-3">
+        <label class="form-label">Select Subject</label>
+        <select class="form-select" id="subjectId">
+          <option value="">Choose subject</option>
+          {% for subject in subjects %}
+          <option value="{{ subject.id }}">{{ subject.code }} - {{ subject.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <video id="attendanceVideo" autoplay muted></video>
+      <canvas id="attendanceCanvas" class="d-none"></canvas>
+      <div class="stepper mt-3">
+        <span class="step" id="stepCamera">1. Camera Ready</span>
+        <span class="step" id="stepGps">2. GPS Verify</span>
+        <span class="step" id="stepFace">3. Face Match</span>
+        <span class="step" id="stepSubmit">4. Attendance Saved</span>
+      </div>
+      <div class="mt-3 d-flex gap-2">
+        <span id="gpsStatus" class="status-pill status-neutral">GPS: Pending</span>
+        <span id="faceStatus" class="status-pill status-neutral">Face: Pending</span>
+      </div>
+      <button id="markAttendanceBtn" class="btn btn-brand mt-3 px-4"><i class="fa-solid fa-camera me-1"></i>Capture & Submit</button>
+      <div id="attendanceResult" class="alert alert-secondary mt-3">Waiting for action.</div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-soft p-3 h-100">
+      <h6 class="mb-2">Verification Guide</h6>
+      <ul class="small mb-0 ps-3">
+        <li>Allow camera and location permission.</li>
+        <li>Stay inside classroom geofence.</li>
+        <li>Keep face centered and well-lit.</li>
+        <li>Submit once and wait for confirmation.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gps.js') }}"></script>
+<script>
+const markBtn = document.getElementById("markAttendanceBtn");
+const resultBox = document.getElementById("attendanceResult");
+const gpsStatus = document.getElementById("gpsStatus");
+const faceStatus = document.getElementById("faceStatus");
+const subjectSelect = document.getElementById("subjectId");
+const cam = new DigiMarkCamera("attendanceVideo", "attendanceCanvas");
+let inProgress = false;
+
+function activateStep(id) {
+  document.querySelectorAll(".step").forEach((s) => s.classList.remove("active"));
+  const node = document.getElementById(id);
+  if (node) node.classList.add("active");
+}
+
+async function setupCamera() {
+  try {
+    await cam.start();
+    activateStep("stepCamera");
+  } catch (err) {
+    resultBox.className = "alert alert-danger mt-3";
+    resultBox.textContent = err.message;
+    markBtn.disabled = true;
+  }
+}
+
+markBtn.addEventListener("click", async () => {
+  if (inProgress) return;
+  if (!subjectSelect.value) {
+    resultBox.className = "alert alert-warning mt-3";
+    resultBox.textContent = "Please choose a subject.";
+    window.showToast("Select a subject first.", "warning");
+    return;
+  }
+  inProgress = true;
+  markBtn.disabled = true;
+  markBtn.innerHTML = '<span class="spinner-inline"><span class="spinner-border spinner-border-sm"></span>Processing...</span>';
+  try {
+    const gps = await window.getCurrentGps();
+    activateStep("stepGps");
+    gpsStatus.className = "status-pill status-ok";
+    gpsStatus.textContent = "GPS: Verified";
+
+    activateStep("stepFace");
+    const image = cam.captureFrameBase64();
+    const response = await fetch("/api/mark-attendance", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        subject_id: Number(subjectSelect.value),
+        latitude: gps.latitude,
+        longitude: gps.longitude,
+        image
+      })
+    });
+    const result = await response.json();
+    if (result.success) {
+      activateStep("stepSubmit");
+      faceStatus.className = "status-pill status-ok";
+      faceStatus.textContent = "Face: Detected";
+      resultBox.className = "alert alert-success mt-3";
+      const locationNote = result.classroom ? ` Location: ${result.classroom}.` : "";
+      resultBox.textContent = `Success. Face confidence ${result.confidence}, distance ${result.distance}m.${locationNote}`;
+      window.showToast("Attendance marked successfully.");
+      setTimeout(() => window.location.href = "{{ url_for('student.student_dashboard') }}", 1500);
+    } else {
+      faceStatus.className = "status-pill status-bad";
+      faceStatus.textContent = "Face: Not Detected";
+      resultBox.className = "alert alert-danger mt-3";
+      resultBox.textContent = result.message || "Attendance failed.";
+      window.showToast(result.message || "Attendance failed.", "danger");
+    }
+  } catch (err) {
+    gpsStatus.className = "status-pill status-bad";
+    gpsStatus.textContent = "GPS: Outside Range / Error";
+    faceStatus.className = "status-pill status-neutral";
+    faceStatus.textContent = "Face: Pending";
+    resultBox.className = "alert alert-danger mt-3";
+    resultBox.textContent = err.message;
+    window.showToast(err.message, "danger");
+  } finally {
+    inProgress = false;
+    markBtn.disabled = false;
+    markBtn.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Capture & Submit';
+  }
+});
+
+setupCamera();
+</script>
+{% endblock %}

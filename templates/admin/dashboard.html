@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard | DigiMark{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <p class="muted-caption mb-1">System Control Center</p>
+      <h3 class="page-header mb-0">Admin Dashboard</h3>
+    </div>
+    <span class="status-pill status-neutral">Live Analytics</span>
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card-soft p-3 dashboard-stat"><div class="d-flex justify-content-between align-items-start"><div><h6>Total Students</h6><p class="metric-value mb-0">{{ total_students }}</p></div><span class="kpi-icon"><i class="fa-solid fa-user-graduate"></i></span></div></div></div>
+  <div class="col-md-3"><div class="card-soft p-3 dashboard-stat"><div class="d-flex justify-content-between align-items-start"><div><h6>Total Faculty</h6><p class="metric-value mb-0">{{ total_faculty }}</p></div><span class="kpi-icon"><i class="fa-solid fa-chalkboard-user"></i></span></div></div></div>
+  <div class="col-md-2"><div class="card-soft p-3 dashboard-stat"><div class="d-flex justify-content-between align-items-start"><div><h6>Total Subjects</h6><p class="metric-value mb-0">{{ total_subjects }}</p></div><span class="kpi-icon"><i class="fa-solid fa-book"></i></span></div></div></div>
+  <div class="col-md-1"><div class="card-soft p-3 dashboard-stat"><h6>Branches</h6><p class="metric-value mb-0">{{ branch_total }}</p></div></div>
+  <div class="col-md-2"><div class="card-soft p-3 dashboard-stat"><h6>Face Registered</h6><p class="metric-value mb-0">{{ face_registration_percent }}%</p></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Branch Overview</h5>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Branch</th><th>Students</th><th>Face Registered</th><th>Attendance %</th></tr></thead>
+          <tbody>
+            {% for row in branch_overview %}
+            <tr>
+              <td>{{ row.branch }}</td>
+              <td>{{ row.student_count }}</td>
+              <td>{{ row.face_registered_count }}</td>
+              <td>{{ row.attendance_percentage }}%</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No branch data yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Faculty Load</h5>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Faculty</th><th>Department</th><th>Subjects</th><th>Student Pool</th></tr></thead>
+          <tbody>
+            {% for card in faculty_cards %}
+            <tr>
+              <td>{{ card.faculty.full_name }}</td>
+              <td>{{ card.faculty.department }}</td>
+              <td>{{ card.subject_count }}</td>
+              <td>{{ card.student_pool }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No faculty records.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6"><div class="card-soft p-3"><canvas id="dailyChart"></canvas></div></div>
+  <div class="col-md-6"><div class="card-soft p-3"><canvas id="branchChart"></canvas></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const dailyData = JSON.parse('{{ daily_attendance|tojson|safe }}');
+const branchData = JSON.parse('{{ branch_stats|tojson|safe }}');
+
+new Chart(document.getElementById("dailyChart"), {
+  type: "bar",
+  data: {
+    labels: dailyData.map(d => d.date),
+    datasets: [{ label: "Daily Attendance", data: dailyData.map(d => d.count), backgroundColor: "#4f46e5", borderRadius: 8, maxBarThickness: 28 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true } }, scales: { y: { beginAtZero: true, grid: { color: "rgba(148,163,184,.2)" } }, x: { grid: { display: false } } } }
+});
+
+new Chart(document.getElementById("branchChart"), {
+  type: "pie",
+  data: {
+    labels: branchData.map(d => d.branch),
+    datasets: [{ data: branchData.map(d => d.attendance_percentage), backgroundColor: ["#2563eb", "#0891b2", "#16a34a", "#7c3aed", "#f59e0b", "#ef4444", "#0ea5e9", "#14b8a6"] }]
+  },
+  options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.formattedValue}%` } } } }
+});
+</script>
+{% endblock %}

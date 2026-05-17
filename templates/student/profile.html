@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Student Profile | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Student / Profile</p>
+  <h3 class="page-header mb-0">My Profile</h3>
+</div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Profile Details</h5>
+      <div class="row g-2">
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Full Name</small><div class="fw-semibold">{{ student.full_name }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Enrollment</small><div class="fw-semibold">{{ student.enrollment_no }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Email</small><div class="fw-semibold">{{ user.email }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Branch</small><div class="fw-semibold">{{ student.branch }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Passout Year</small><div class="fw-semibold">{{ student.year }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Semester</small><div class="fw-semibold">{{ student.semester if student.semester else "-" }}</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-2">Face Registration</h5>
+      <p class="text-muted small">Keep your face profile updated for reliable attendance verification.</p>
+      <p><span class="status-pill {{ 'status-ok' if student.face_registered else 'status-bad' }}">{{ "Face Registered" if student.face_registered else "Face Not Registered" }}</span></p>
+      <a class="btn btn-brand" href="{{ url_for('student.register_face_page') }}"><i class="fa-solid fa-camera me-1"></i>{{ "Update Face" if student.face_registered else "Register Face" }}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

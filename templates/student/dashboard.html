@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard | DigiMark{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <p class="muted-caption mb-1">Student Workspace</p>
+      <h3 class="page-header mb-1">Welcome back, {{ student.full_name.split(' ')[0] if student.full_name else 'Student' }}</h3>
+      <small class="text-muted">{{ student.branch }} • Semester {{ student.semester if student.semester else "-" }}</small>
+    </div>
+    <span id="todayStatusBadge" class="status-pill {% if today_status == 'Marked' %}status-ok{% elif today_status == 'Partial' %}status-neutral{% else %}status-bad{% endif %}">Today's Status: {{ today_status }}</span>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card-soft p-3 dashboard-stat"><small class="muted-caption">Overall Attendance</small><p class="metric-value mb-2">{{ avg_attendance }}%</p><div class="progress"><div class="progress-bar" style="width: {{ avg_attendance }}%"></div></div></div></div>
+  <div class="col-md-4"><div class="card-soft p-3 dashboard-stat"><small class="muted-caption">Last Attendance</small><p class="mb-0 fw-semibold">{{ last_record.date|local_date if last_record else "No records" }}</p></div></div>
+  <div class="col-md-4"><div class="card-soft p-3 dashboard-stat"><small class="muted-caption">Last Status</small><p class="mb-0 fw-semibold text-capitalize">{{ last_record.status if last_record else "pending" }}</p></div></div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <small class="muted-caption">Live Lecture Center</small>
+      <p class="mb-0 fw-semibold" id="currentLectureText">Checking live lecture...</p>
+    </div>
+    <span class="status-pill status-neutral" id="currentLectureBadge">Unknown</span>
+  </div>
+  <div class="mt-3 d-flex gap-2 flex-wrap">
+    <a class="btn btn-brand px-3" id="markAttendanceLink" href="{{ url_for('student.student_attendance_page') }}"><i class="fa-solid fa-camera me-1"></i>Mark Attendance</a>
+    <a class="btn btn-outline-secondary px-3" href="{{ url_for('student.student_profile_page') }}">Profile</a>
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">Previous Lectures & Attendance</h5>
+    <small class="text-muted">History with attendance status</small>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Date</th><th>Subject</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody id="previousLecturesBody">
+        <tr><td colspan="4">Loading previous lectures...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="mb-0">Subject Performance Cards</h5>
+    <small class="text-muted">Track each subject in one glance</small>
+  </div>
+  <span class="status-pill status-neutral">{{ subject_cards|length }} Subjects</span>
+</div>
+
+<div class="row g-3">
+  {% for card in subject_cards %}
+  <div class="col-md-4">
+    <div class="card-soft h-100 p-3">
+      <h5>{{ card.subject.name }}</h5>
+      <p class="text-muted mb-1">{{ card.subject.code }}</p>
+      <p class="metric-value mb-1">{{ card.percentage }}%</p>
+      <small class="{{ 'text-success' if card.today_marked else 'text-warning' }}">
+        {{ 'Marked today' if card.today_marked else 'Not marked today' }}
+      </small>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="alert alert-info">No subjects assigned for your branch/year yet.</div>
+  </div>
+  {% endfor %}
+</div>
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Weekly Timetable</h5>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Day</th><th>Time Slot</th><th>Subject</th><th>Faculty</th><th>Classroom</th></tr></thead>
+          <tbody>
+            {% for row in timetable_entries %}
+            <tr>
+              <td>{{ row.day_of_week }}</td>
+              <td>
+                {% if row.start_time and row.end_time %}
+                  {{ row.start_time }} - {{ row.end_time }}
+                {% else %}
+                  P{{ row.period_no }}
+                {% endif %}
+              </td>
+              <td>{% if row.subject %}{{ row.subject.code }} - {{ row.subject.name }}{% else %}-{% endif %}</td>
+              <td>{% if row.faculty %}{{ row.faculty.full_name }}{% else %}-{% endif %}</td>
+              <td>{{ row.classroom if row.classroom else "-" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">No timetable available for your batch.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Recent Attendance History</h5>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for row in attendance_history %}
+            <tr>
+              <td>{{ row.date|local_date }}</td>
+              <td>{% if row.subject %}{{ row.subject.code }}{% else %}-{% endif %}</td>
+              <td><span class="status-pill {{ 'status-ok' if row.status == 'present' else 'status-bad' }}">{{ row.status }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3">No attendance records yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-soft p-3 h-100">
+      <h5 class="mb-3">Subject Attendance Snapshot</h5>
+      <canvas id="subjectAttendanceChart" height="170"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const subjectCards = {{ subject_cards_json|tojson }};
+const currentLectureTextEl = document.getElementById("currentLectureText");
+const currentLectureBadgeEl = document.getElementById("currentLectureBadge");
+const markAttendanceLinkEl = document.getElementById("markAttendanceLink");
+const previousLecturesBodyEl = document.getElementById("previousLecturesBody");
+const todayStatusBadgeEl = document.getElementById("todayStatusBadge");
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  const div = document.createElement("div");
+  div.textContent = String(value);
+  return div.innerHTML;
+}
+
+if (subjectCards.length && document.getElementById("subjectAttendanceChart")) {
+  new Chart(document.getElementById("subjectAttendanceChart"), {
+    type: "bar",
+    data: {
+      labels: subjectCards.map((item) => item.subject.code),
+      datasets: [{ label: "Attendance %", data: subjectCards.map((item) => item.percentage), backgroundColor: "#4f46e5" }]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+}
+
+async function refreshStudentLecture() {
+  try {
+    const res = await fetch("/api/student/current-lecture");
+    const payload = await res.json();
+    console.debug("student current lecture response", payload);
+    const lecture = payload?.data?.lecture || null;
+    if (payload.success && lecture) {
+      const markedNote = lecture.already_marked ? ` • Marked at ${lecture.marked_at}` : "";
+      currentLectureTextEl.textContent = `${lecture.subject} (${lecture.start_time} - ${lecture.end_time}) • ${lecture.classroom || "Classroom N/A"}${markedNote}`;
+      currentLectureBadgeEl.className = "status-pill status-ok";
+      currentLectureBadgeEl.textContent = lecture.already_marked ? "Attendance Marked" : "Lecture Active";
+      todayStatusBadgeEl.className = `status-pill ${lecture.already_marked ? "status-ok" : "status-bad"}`;
+      todayStatusBadgeEl.textContent = `Today's Status: ${lecture.already_marked ? "Marked" : "Pending"}`;
+      if (lecture.already_marked) {
+        markAttendanceLinkEl.classList.add("disabled");
+        markAttendanceLinkEl.setAttribute("aria-disabled", "true");
+      } else {
+        markAttendanceLinkEl.classList.remove("disabled");
+        markAttendanceLinkEl.removeAttribute("aria-disabled");
+      }
+      return;
+    }
+    currentLectureTextEl.textContent = "No lecture running right now.";
+    currentLectureBadgeEl.className = "status-pill status-bad";
+    currentLectureBadgeEl.textContent = "No Lecture";
+    markAttendanceLinkEl.classList.add("disabled");
+    markAttendanceLinkEl.setAttribute("aria-disabled", "true");
+  } catch (err) {
+    console.error("Failed to fetch current lecture", err);
+    currentLectureTextEl.textContent = "Unable to load lecture status.";
+    currentLectureBadgeEl.className = "status-pill status-neutral";
+    currentLectureBadgeEl.textContent = "Unavailable";
+    markAttendanceLinkEl.classList.add("disabled");
+    markAttendanceLinkEl.setAttribute("aria-disabled", "true");
+  }
+}
+
+async function refreshPreviousLectures() {
+  try {
+    const res = await fetch("/api/student/previous-lectures");
+    const payload = await res.json();
+    console.debug("student previous lectures response", payload);
+    const lectures = payload?.data?.lectures || [];
+    if (!payload.success || !Array.isArray(lectures) || !lectures.length) {
+      previousLecturesBodyEl.innerHTML = '<tr><td colspan="4">No previous lectures found.</td></tr>';
+      return;
+    }
+    previousLecturesBodyEl.innerHTML = lectures.map((row) => {
+      const st = String(row.status || "").toLowerCase();
+      const ok = st === "present";
+      let pillClass = "status-bad";
+      let label = escapeHtml(row.status || "—");
+      if (ok) {
+        pillClass = "status-ok";
+        label = "Present";
+      } else if (st === "absent") {
+        label = "Absent";
+      } else if (st === "not_marked") {
+        pillClass = "status-neutral";
+        label = "Not marked";
+      }
+      return `
+      <tr>
+        <td>${escapeHtml(row.date)}</td>
+        <td>${escapeHtml(row.subject_code)} - ${escapeHtml(row.subject)}</td>
+        <td>${escapeHtml(row.start_time)} - ${escapeHtml(row.end_time)}</td>
+        <td><span class="status-pill ${pillClass}">${label}</span></td>
+      </tr>`;
+    }).join("");
+  } catch (err) {
+    console.error("Failed to fetch previous lectures", err);
+    previousLecturesBodyEl.innerHTML = '<tr><td colspan="4">Unable to load lecture history.</td></tr>';
+  }
+}
+
+markAttendanceLinkEl.addEventListener("click", (event) => {
+  if (markAttendanceLinkEl.classList.contains("disabled")) {
+    event.preventDefault();
+    window.showToast("No lecture running currently", "warning");
+  }
+});
+
+refreshStudentLecture();
+refreshPreviousLectures();
+setInterval(refreshStudentLecture, 30000);
+setInterval(refreshPreviousLectures, 60000);
+</script>
+{% endblock %}

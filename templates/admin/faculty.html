@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Faculty | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3"><p class="muted-caption mb-1">Admin / Faculty</p><h3 class="page-header mb-0">Faculty</h3></div>
+<div class="card-soft p-3 mb-3">
+  <h5>Add Faculty</h5>
+  <form id="addFacultyForm" class="row g-2">
+    <div class="col-md-2"><input class="form-control" name="username" placeholder="Username" required></div>
+    <div class="col-md-3"><input class="form-control" name="email" type="email" placeholder="Email" required></div>
+    <div class="col-md-2"><input class="form-control" name="password" value="Faculty@123"></div>
+    <div class="col-md-3"><input class="form-control" name="full_name" placeholder="Full Name" required></div>
+    <div class="col-md-2"><select class="form-select" name="department" required><option value="">Department</option>{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}</select></div>
+    <div class="col-md-12"><button class="btn btn-brand" id="addFacultyBtn">Add Faculty</button></div>
+  </form>
+</div>
+<div class="card-soft p-3 mb-3">
+  <h5>Bulk Upload Faculty</h5>
+  <div class="row g-2">
+    <div class="col-md-5"><input type="file" id="facultyCsvFile" class="form-control" accept=".csv,.xlsx,.xls"></div>
+    <div class="col-md-2"><button class="btn btn-brand w-100" id="uploadFacultyCsvBtn">Upload</button></div>
+    <div class="col-md-5" id="facultyBulkResult"></div>
+  </div>
+</div>
+<div class="card-soft p-3">
+  <div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Faculty Registry</h5><div class="d-flex gap-2"><input class="form-control form-control-sm" id="facultySearch" placeholder="Search"><a class="btn btn-outline-secondary btn-sm" href="/api/admin/export/faculties">Export CSV</a></div></div>
+  <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Actions</th></tr></thead><tbody>
+    {% for faculty in faculties %}
+    <tr data-search="{{ faculty.full_name }} {{ faculty.department }} {{ faculty.user.email if faculty.user else '' }}">
+      <td>{{ faculty.full_name }}</td><td>{{ faculty.department }}</td><td>{{ faculty.user.email if faculty.user else "-" }}</td>
+      <td><button class="btn btn-sm btn-outline-primary edit-btn" data-id="{{ faculty.id }}" data-name="{{ faculty.full_name }}" data-department="{{ faculty.department }}">Edit</button> <button class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ faculty.id }}">Delete</button></td>
+    </tr>
+    {% else %}<tr><td colspan="4">No faculty records.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+addFacultyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = Object.fromEntries(new FormData(addFacultyForm).entries());
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-faculty", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+});
+uploadFacultyCsvBtn.addEventListener("click", async () => {
+  const file = facultyCsvFile.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append("file", file);
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-faculties-bulk", { method: "POST", body: fd });
+  DigiMarkAdmin.renderBulkResult("facultyBulkResult", data);
+  if (data.success) setTimeout(() => location.reload(), 700);
+});
+document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", async () => {
+  if (!confirm("Delete faculty?")) return;
+  const data = await DigiMarkAdmin.apiRequest(`/api/admin/delete/faculty/${btn.dataset.id}`, { method: "DELETE" });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+}));
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "facultySearch",
+  tableBodySelector: "tbody",
+});
+</script>
+{% endblock %}

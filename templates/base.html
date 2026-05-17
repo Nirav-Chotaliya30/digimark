@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DigiMark{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body data-bs-theme="light">
+  {% set _content_block %}
+    {% block content %}{% endblock %}
+  {% endset %}
+
+  {% if current_user.is_authenticated %}
+  <div class="app-shell" id="appShell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a class="brand-logo text-decoration-none" href="{{ url_for('auth.home') }}"><i class="fa-solid fa-fingerprint me-2"></i>DigiMark</a>
+        <button class="btn btn-sm btn-icon d-lg-none" id="sidebarCloseBtn" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <nav class="sidebar-nav">
+        {% if current_user.role == "admin" %}
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_dashboard') %}active{% endif %}" href="{{ url_for('admin.admin_dashboard') }}"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_students_page') %}active{% endif %}" href="{{ url_for('admin.admin_students_page') }}"><i class="fa-solid fa-user-graduate"></i><span>Students</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_faculty_page') %}active{% endif %}" href="{{ url_for('admin.admin_faculty_page') }}"><i class="fa-solid fa-chalkboard-user"></i><span>Faculty</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_subjects_page') %}active{% endif %}" href="{{ url_for('admin.admin_subjects_page') }}"><i class="fa-solid fa-book-open"></i><span>Subjects</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_attendance_page') %}active{% endif %}" href="{{ url_for('admin.admin_attendance_page') }}"><i class="fa-solid fa-clipboard-check"></i><span>Attendance</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_reports_page') %}active{% endif %}" href="{{ url_for('admin.admin_reports_page') }}"><i class="fa-solid fa-file-lines"></i><span>Reports</span></a>
+        <a class="sidebar-link {% if request.path == url_for('admin.admin_settings_page') %}active{% endif %}" href="{{ url_for('admin.admin_settings_page') }}"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+        {% elif current_user.role == "faculty" %}
+        <a class="sidebar-link {% if request.path == url_for('faculty.faculty_dashboard') %}active{% endif %}" href="{{ url_for('faculty.faculty_dashboard') }}"><i class="fa-solid fa-chalkboard-user"></i><span>Dashboard</span></a>
+        <a class="sidebar-link {% if request.path == url_for('faculty.faculty_students_page') %}active{% endif %}" href="{{ url_for('faculty.faculty_students_page') }}"><i class="fa-solid fa-user-group"></i><span>Students</span></a>
+        <a class="sidebar-link {% if request.path == url_for('faculty.faculty_attendance_page') %}active{% endif %}" href="{{ url_for('faculty.faculty_attendance_page') }}"><i class="fa-solid fa-clipboard-check"></i><span>Attendance</span></a>
+        <a class="sidebar-link {% if request.path == url_for('faculty.faculty_reports_page') %}active{% endif %}" href="{{ url_for('faculty.faculty_reports_page') }}"><i class="fa-solid fa-file-lines"></i><span>Reports</span></a>
+        {% elif current_user.role == "student" %}
+        <a class="sidebar-link {% if request.path == url_for('student.student_dashboard') %}active{% endif %}" href="{{ url_for('student.student_dashboard') }}"><i class="fa-solid fa-graduation-cap"></i><span>Dashboard</span></a>
+        <a class="sidebar-link {% if request.path == url_for('student.student_attendance_page') %}active{% endif %}" href="{{ url_for('student.student_attendance_page') }}"><i class="fa-solid fa-camera"></i><span>Attendance</span></a>
+        <a class="sidebar-link {% if request.path == url_for('student.student_history_page') %}active{% endif %}" href="{{ url_for('student.student_history_page') }}"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+        <a class="sidebar-link {% if request.path == url_for('student.student_profile_page') %}active{% endif %}" href="{{ url_for('student.student_profile_page') }}"><i class="fa-solid fa-user"></i><span>Profile</span></a>
+        {% endif %}
+        {% if current_user.role != "student" %}
+        <a class="sidebar-link" href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user"></i><span>Profile</span></a>
+        {% endif %}
+      </nav>
+      <div class="sidebar-footer">
+        <small class="muted-caption">{{ current_user.email }}</small>
+        <a class="btn btn-outline-secondary w-100 mt-2 js-logout-link" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</a>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-icon" id="sidebarToggleBtn" type="button"><i class="fa-solid fa-bars"></i></button>
+          <div class="breadcrumbs">
+            <span>DigiMark</span>
+            <i class="fa-solid fa-angle-right"></i>
+            <span class="text-capitalize">{{ current_user.role }}</span>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-icon" id="themeToggleBtn" type="button"><i class="fa-regular fa-moon"></i></button>
+          <button class="btn btn-sm btn-icon" type="button" aria-label="Notifications"><i class="fa-regular fa-bell"></i></button>
+          <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user me-1"></i>Profile</a>
+        </div>
+      </header>
+      <main class="app-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {{ _content_block }}
+      </main>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  </div>
+  {% else %}
+  <nav class="navbar navbar-expand-lg navbar-dark brand-nav sticky-top">
+    <div class="container">
+      <a class="navbar-brand brand-logo" href="{{ url_for('auth.home') }}"><i class="fa-solid fa-fingerprint me-1"></i>DigiMark</a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm rounded-pill px-3" id="themeToggleBtn" type="button"><i class="fa-regular fa-moon"></i></button>
+        <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{{ url_for('auth.login') }}"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Login</a>
+        <a class="btn btn-light btn-sm rounded-pill px-3" href="{{ url_for('auth.register') }}">Register</a>
+      </div>
+    </div>
+  </nav>
+  <main class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {{ _content_block }}
+  </main>
+  {% endif %}
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-sm">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Logout</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">Are you sure you want to end this session?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a id="confirmLogoutBtn" class="btn btn-danger" href="{{ url_for('auth.logout') }}">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

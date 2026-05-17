@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}My Profile | DigiMark{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card-soft p-4">
+      <p class="muted-caption mb-1">Account Overview</p>
+      <h3 class="page-header mb-3">My Profile</h3>
+      <div class="row g-3">
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Role</small><div class="fw-semibold text-capitalize">{{ current_user.role }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Email</small><div class="fw-semibold">{{ current_user.email }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Username</small><div class="fw-semibold">{{ current_user.username }}</div></div></div>
+        {% if profile and current_user.role == "student" %}
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Enrollment</small><div class="fw-semibold">{{ profile.enrollment_no }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Full Name</small><div class="fw-semibold">{{ profile.full_name }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Branch</small><div class="fw-semibold">{{ profile.branch }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Semester</small><div class="fw-semibold">{{ profile.semester if profile.semester else "-" }}</div></div></div>
+        {% elif profile and current_user.role == "faculty" %}
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Full Name</small><div class="fw-semibold">{{ profile.full_name }}</div></div></div>
+        <div class="col-md-6"><div class="p-3 rounded bg-body-tertiary"><small class="muted-caption">Department</small><div class="fw-semibold">{{ profile.department }}</div></div></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Login | DigiMark{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 78vh;">
+  <div class="col-lg-6 col-md-8">
+    <div class="card-soft p-4 p-md-5">
+      <p class="muted-caption mb-1"><i class="fa-solid fa-shield-halved me-1"></i>Secure Access</p>
+      <h3 class="page-header mb-3">Welcome Back</h3>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Role</label>
+          <select class="form-select" name="role" required>
+            <option value="">Choose role</option>
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <input type="password" class="form-control" name="password" id="passwordField" required>
+            <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" value="on" id="rememberMe" name="remember_me">
+          <label class="form-check-label" for="rememberMe">Remember me</label>
+        </div>
+        <button class="btn btn-brand w-100" type="submit">Login</button>
+      </form>
+      <p class="mt-3 mb-0 text-center muted-caption">New user? <a href="{{ url_for('auth.register') }}">Register</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const toggleBtn = document.getElementById("togglePasswordBtn");
+const passwordField = document.getElementById("passwordField");
+toggleBtn?.addEventListener("click", () => {
+  const isHidden = passwordField.type === "password";
+  passwordField.type = isHidden ? "text" : "password";
+  toggleBtn.innerHTML = isHidden ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+});
+</script>
+{% endblock %}

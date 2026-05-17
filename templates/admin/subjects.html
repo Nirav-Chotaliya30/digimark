@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Subjects | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3"><p class="muted-caption mb-1">Admin / Subjects</p><h3 class="page-header mb-0">Subjects</h3></div>
+<div class="card-soft p-3 mb-3">
+  <h5>Add Subject</h5>
+  <form id="addSubjectForm" class="row g-2">
+    <div class="col-md-3"><input class="form-control" name="name" placeholder="Subject Name" required></div>
+    <div class="col-md-2"><input class="form-control" name="code" placeholder="Code" required></div>
+    <div class="col-md-2"><select class="form-select" name="branch" required><option value="">Branch</option>{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><select class="form-select" name="passout_year" required><option value="">Year</option>{% for y in passout_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><select class="form-select" name="semester"><option value="">Sem</option>{% for sem in range(1,9) %}<option value="{{ sem }}">S{{ sem }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select class="form-select" name="faculty_id"><option value="">Unassigned</option>{% for f in faculties %}<option value="{{ f.id }}">{{ f.full_name }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><button class="btn btn-brand w-100">Add</button></div>
+  </form>
+</div>
+<div class="card-soft p-3 mb-3">
+  <h5>Bulk Upload Subjects</h5>
+  <div class="row g-2">
+    <div class="col-md-5"><input type="file" id="subjectCsvFile" class="form-control" accept=".csv,.xlsx,.xls"></div>
+    <div class="col-md-2"><button class="btn btn-brand w-100" id="uploadSubjectCsvBtn">Upload</button></div>
+    <div class="col-md-5" id="subjectBulkResult"></div>
+  </div>
+</div>
+<div class="card-soft p-3">
+  <div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Subject Registry</h5><div class="d-flex gap-2"><input class="form-control form-control-sm" id="subjectSearch" placeholder="Search"><a class="btn btn-outline-secondary btn-sm" href="/api/admin/export/subjects">Export CSV</a></div></div>
+  <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Code</th><th>Name</th><th>Branch</th><th>Year</th><th>Sem</th><th>Faculty</th><th>Actions</th></tr></thead><tbody>
+    {% for subject in subjects %}
+    <tr data-search="{{ subject.code }} {{ subject.name }} {{ subject.branch }} {{ subject.year }}">
+      <td>{{ subject.code }}</td><td>{{ subject.name }}</td><td>{{ subject.branch }}</td><td>{{ subject.year }}</td><td>{{ subject.semester if subject.semester else "-" }}</td><td>{{ subject.faculty.full_name if subject.faculty else "Unassigned" }}</td>
+      <td><button class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ subject.id }}">Delete</button></td>
+    </tr>
+    {% else %}<tr><td colspan="7">No subjects found.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+addSubjectForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = Object.fromEntries(new FormData(addSubjectForm).entries());
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-subject", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+});
+uploadSubjectCsvBtn.addEventListener("click", async () => {
+  const file = subjectCsvFile.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append("file", file);
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-subjects-bulk", { method: "POST", body: fd });
+  DigiMarkAdmin.renderBulkResult("subjectBulkResult", data);
+  if (data.success) setTimeout(() => location.reload(), 700);
+});
+document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", async () => {
+  if (!confirm("Delete subject?")) return;
+  const data = await DigiMarkAdmin.apiRequest(`/api/admin/delete/subject/${btn.dataset.id}`, { method: "DELETE" });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+}));
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "subjectSearch",
+  tableBodySelector: "tbody",
+});
+</script>
+{% endblock %}

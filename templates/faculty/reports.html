@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Faculty Reports | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <p class="muted-caption mb-1">Faculty / Reports</p>
+  <h3 class="page-header mb-0">Reports</h3>
+</div>
+<div class="card-soft p-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Subject</label>
+      <select id="subjectFilter" class="form-select">
+        <option value="">All</option>
+        {% for s in subjects %}
+        <option value="{{ s.id }}">{{ s.code }} - {{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Branch</label>
+      <select id="branchFilter" class="form-select">
+        <option value="">All</option>
+        {% for branch in branches %}
+        <option value="{{ branch }}">{{ branch }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Passout Year</label><input id="yearFilter" class="form-control" type="number"></div>
+    <div class="col-md-1"><label class="form-label">Sem</label><input id="semesterFilter" class="form-control" type="number" min="1" max="8"></div>
+    <div class="col-md-2"><label class="form-label">Start</label><input id="startDate" class="form-control" type="date"></div>
+    <div class="col-md-2"><label class="form-label">End</label><input id="endDate" class="form-control" type="date"></div>
+    <div class="col-md-1"><button class="btn btn-brand w-100" onclick="loadReport()">Go</button></div>
+  </div>
+  <table class="table table-striped mt-3">
+    <thead><tr><th>Enrollment</th><th>Name</th><th>Present</th><th>Total</th><th>Attendance %</th></tr></thead>
+    <tbody id="reportBody"></tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  const div = document.createElement("div");
+  div.textContent = String(value);
+  return div.innerHTML;
+}
+async function loadReport() {
+  const params = new URLSearchParams();
+  if (subjectFilter.value) params.set("subject_id", subjectFilter.value);
+  if (branchFilter.value) params.set("branch", branchFilter.value);
+  if (yearFilter.value) params.set("year", yearFilter.value);
+  if (semesterFilter.value) params.set("semester", semesterFilter.value);
+  if (startDate.value) params.set("start_date", startDate.value);
+  if (endDate.value) params.set("end_date", endDate.value);
+  try {
+    const res = await fetch(`/api/faculty/attendance-summary?${params.toString()}`);
+    const data = await res.json();
+    const rows = ((data.data && data.data.rows) || data.rows || []).map((r) => {
+      const pct = Number(r.attendance_percentage);
+      const safePct = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
+      const barClass = safePct < 75 ? "bg-danger" : "bg-success";
+      return `<tr><td>${escapeHtml(r.enrollment_no)}</td><td>${escapeHtml(r.full_name)}</td><td>${escapeHtml(r.present)}</td><td>${escapeHtml(r.total)}</td><td><div class="progress"><div class="progress-bar ${barClass}" style="width:${safePct}%">${safePct}%</div></div></td></tr>`;
+    });
+    document.getElementById("reportBody").innerHTML = rows.join("") || "<tr><td colspan='5'>No records found.</td></tr>";
+  } catch (e) {
+    document.getElementById("reportBody").innerHTML = "<tr><td colspan='5'>Could not load report.</td></tr>";
+  }
+}
+</script>
+{% endblock %}

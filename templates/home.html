@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}DigiMark | Smart Attendance{% endblock %}
+{% block content %}
+<section class="hero-card p-4 p-md-5 mb-4">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-7">
+      <p class="muted-caption mb-2">AI + Geofence Attendance Platform</p>
+      <h1 class="display-5 fw-bold mb-3">DigiMark Smart Attendance System</h1>
+      <p class="lead mb-4">
+        Secure attendance with face recognition and GPS verification, plus live analytics for students,
+        faculty, and administrators.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-brand rounded-pill px-4" href="{{ url_for('auth.login') }}">Get Started</a>
+        <a class="btn btn-outline-primary rounded-pill px-4" href="{{ url_for('auth.register') }}">Create Account</a>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card-soft p-4">
+        <h5 class="mb-3">Platform Highlights</h5>
+        <ul class="mb-0 ps-3">
+          <li>Dual verification: Face + Geofence</li>
+          <li>Role dashboards: Student, Faculty, Admin</li>
+          <li>CSV exports, defaulters, and branch analytics</li>
+          <li>Auto-seeded admin and secure password hashing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="row g-3">
+  <div class="col-md-4">
+    <div class="card-soft p-3 h-100">
+      <h5>For Students</h5>
+      <p class="muted-caption">Register face once, mark attendance in seconds, and track attendance health by subject.</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-soft p-3 h-100">
+      <h5>For Faculty</h5>
+      <p class="muted-caption">View subject reports, detect defaulters quickly, and export clean logs to CSV.</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-soft p-3 h-100">
+      <h5>For Admin</h5>
+      <p class="muted-caption">Manage students, faculty, subjects, and monitor performance by branch and day.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

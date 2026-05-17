@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Students | DigiMark{% endblock %}
+{% block content %}
+<div class="card-soft p-3 p-md-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <p class="muted-caption mb-1">Admin / Students</p>
+      <h3 class="page-header mb-0">Students</h3>
+    </div>
+    <button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#addStudentModal"><i class="fa-solid fa-plus me-1"></i>Add Student</button>
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <h5>Bulk Upload Students</h5>
+  <div class="row g-2">
+    <div class="col-md-5"><input type="file" id="studentCsvFile" class="form-control" accept=".csv,.xlsx,.xls"></div>
+    <div class="col-md-2"><button class="btn btn-brand w-100" id="uploadStudentCsvBtn">Upload</button></div>
+    <div class="col-md-5" id="studentBulkResult"></div>
+  </div>
+</div>
+
+<div class="card-soft p-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <h5 class="mb-0">Student Registry</h5>
+    <div class="d-flex gap-2">
+      <input class="form-control form-control-sm" id="studentSearch" placeholder="Search">
+      <select class="form-select form-select-sm" id="studentBranchFilter"><option value="">All Departments</option>{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}</select>
+      <a class="btn btn-outline-secondary btn-sm" href="/api/admin/export/students">Export CSV</a>
+      <button class="btn btn-outline-danger btn-sm" id="bulkDeleteStudentsBtn">Bulk Delete</button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm" id="studentTable">
+      <thead><tr><th></th><th>Enrollment</th><th>Name</th><th>Branch</th><th>Year</th><th>Sem</th><th>Face</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for student in students %}
+        <tr data-branch="{{ student.branch }}" data-search="{{ student.enrollment_no }} {{ student.full_name }} {{ student.branch }} {{ student.year }}">
+          <td><input type="checkbox" class="form-check-input row-check" value="{{ student.id }}"></td>
+          <td>{{ student.enrollment_no }}</td>
+          <td>{{ student.full_name }}</td>
+          <td>{{ student.branch }}</td>
+          <td>{{ student.year }}</td>
+          <td>{{ student.semester if student.semester else "-" }}</td>
+          <td><span class="status-pill {{ 'status-ok' if student.face_registered else 'status-bad' }}">{{ "Registered" if student.face_registered else "Pending" }}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="{{ student.id }}" data-name="{{ student.full_name }}" data-branch="{{ student.branch }}" data-year="{{ student.year }}" data-semester="{{ student.semester if student.semester else '' }}">Edit</button>
+            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ student.id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">No students found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Add Student</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="addStudentForm" class="row g-2">
+          <div class="col-md-6"><input class="form-control" name="enrollment_no" placeholder="Enrollment No" required></div>
+          <div class="col-md-6"><input class="form-control" name="full_name" placeholder="Full Name" required></div>
+          <div class="col-md-6"><input type="email" class="form-control" name="email" placeholder="Email" required></div>
+          <div class="col-md-6"><input class="form-control" name="password" placeholder="Password" value="Student@123"></div>
+          <div class="col-md-6"><select class="form-select" name="branch" required><option value="">Branch</option>{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}</select></div>
+          <div class="col-md-3"><select class="form-select" name="passout_year" required><option value="">Year</option>{% for y in passout_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}</select></div>
+          <div class="col-md-3"><select class="form-select" name="semester"><option value="">Sem</option>{% for sem in range(1, 9) %}<option value="{{ sem }}">S{{ sem }}</option>{% endfor %}</select></div>
+        </form>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-brand" id="saveStudentBtn">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Edit Student</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="editStudentId">
+        <div class="mb-2"><input class="form-control" id="editStudentName" placeholder="Full Name"></div>
+        <div class="mb-2"><select class="form-select" id="editStudentBranch"><option value="">Branch</option>{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}</select></div>
+        <div class="row g-2">
+          <div class="col"><input class="form-control" id="editStudentYear" placeholder="Year"></div>
+          <div class="col"><input class="form-control" id="editStudentSemester" placeholder="Semester"></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-brand" id="updateStudentBtn">Update</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+const editModal = new bootstrap.Modal(document.getElementById("editStudentModal"));
+document.getElementById("saveStudentBtn").addEventListener("click", async () => {
+  const form = document.getElementById("addStudentForm");
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-student", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+});
+document.querySelectorAll(".edit-btn").forEach((btn) => btn.addEventListener("click", () => {
+  editStudentId.value = btn.dataset.id;
+  editStudentName.value = btn.dataset.name;
+  editStudentBranch.value = btn.dataset.branch;
+  editStudentYear.value = btn.dataset.year;
+  editStudentSemester.value = btn.dataset.semester || "";
+  editModal.show();
+}));
+document.getElementById("updateStudentBtn").addEventListener("click", async () => {
+  const data = await DigiMarkAdmin.apiRequest(`/api/admin/update/student/${editStudentId.value}`, {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ full_name: editStudentName.value, branch: editStudentBranch.value, year: editStudentYear.value, semester: editStudentSemester.value })
+  });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+});
+document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", async () => {
+  if (!confirm("Delete student?")) return;
+  const data = await DigiMarkAdmin.apiRequest(`/api/admin/delete/student/${btn.dataset.id}`, { method: "DELETE" });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+}));
+document.getElementById("uploadStudentCsvBtn").addEventListener("click", async () => {
+  const file = document.getElementById("studentCsvFile").files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append("file", file);
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/add-students-bulk", { method: "POST", body: formData });
+  DigiMarkAdmin.renderBulkResult("studentBulkResult", data);
+  if (data.success) setTimeout(() => location.reload(), 700);
+});
+document.getElementById("bulkDeleteStudentsBtn").addEventListener("click", async () => {
+  const ids = Array.from(document.querySelectorAll(".row-check:checked")).map((c) => Number(c.value));
+  if (!ids.length || !confirm(`Delete ${ids.length} students?`)) return;
+  const data = await DigiMarkAdmin.apiRequest("/api/admin/bulk-delete", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ type: "student", ids }) });
+  window.showToast(data.message, data.success ? "success" : "danger");
+  if (data.success) location.reload();
+});
+DigiMarkAdmin.wireTableSearch({
+  searchInputId: "studentSearch",
+  tableBodySelector: "#studentTable tbody",
+  branchFilterId: "studentBranchFilter",
+});
+</script>
+{% endblock %}
